@@ -57,10 +57,10 @@
 			let sizeOfNextStep = 0;
 
 			let textureEquirec;
-			let nighscene;
 			const black = new THREE.Color(0x000000);
 			const white = new THREE.Color(0xFFFFFF);
 			const gray = new THREE.Color(0x999999);
+			let dayTime = 8;
 
 			init();
 
@@ -68,7 +68,7 @@
 
 
 
-																		//PEDAL_COLORS
+																			//PEDAL_COLORS
 
 
 			// Creates random colors, output in #HEXRGB format.
@@ -82,9 +82,6 @@
 				return color;
 			}
 
-
-
-		
 
 																			//CAMERA
 
@@ -103,9 +100,13 @@
 				// damping and auto rotation require the controls to be updated each frame
 
 				// Uncomment the following line for the camera to automatically orbit
-				// controls.autoRotate = true;
+				controls.autoRotate = true;
 				controls.enableDamping = true;
-				controls.maxDistance = 40;
+				controls.maxDistance = 10;
+				controls.minDistance = 5
+				controls.maxAzimuthAngle = Math.PI
+				controls.minAzimuthAngle = -Math.PI
+
 				// controls.distance = 3;
 				// controls.object.position.set(camera.position.X, camera.position.Y, camera.position.Z);
 				controls.target = new THREE.Vector3(0,2.1,0);
@@ -126,41 +127,107 @@
 				// scene.add( gridHelper );
 
 
+																	//GUI2
+				// const gui = new GUI();
+
+
+																	//LIGHTS
+			
 
 
 
-																			//LIGHTS
 
-				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+
+											//MOON
+
+				const moonlLight = new THREE.DirectionalLight( '0xffffff' , 5 );
+				moonlLight.position.set( 7.488, 4.887, -1.55);
+				moonlLight.castShadow = true;
+				scene.add( moonlLight );
+
+
+				const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x896343, 10 );
 				hemiLight.position.set( 0, 20, 0 );
-				scene.add( hemiLight );
+				scene.add(hemiLight);
 
-				const dirLight = new THREE.DirectionalLight( 0xffffff );
-				dirLight.position.set( - 3, 10, - 10 );
-				dirLight.castShadow = true;
-				// dirLight.shadow.camera.top = 2;
-				// dirLight.shadow.camera.bottom = - 2;
-				// dirLight.shadow.camera.left = - 2;
-				// dirLight.shadow.camera.right = 2;
-				// dirLight.shadow.camera.near = 0.1;
-				// dirLight.shadow.camera.far = 40;
-				scene.add( dirLight );
+
+
+											//MOON_GUI
+				// gui.add(moonlLight, 'intensity').min(0).max(15).step(0.001).name('MoonIntensity')
+				// gui.add(moonlLight.position, 'x').min(-5).max(10).step(0.001).name('MoonX')
+				// gui.add(moonlLight.position, 'y').min(-5).max(10).step(0.001).name('MoonY')
+				// gui.add(moonlLight.position, 'z').min(-5).max(5).step(0.001).name('MoonZ')
+
+
+
+											//SUN
+
+				// const dirLight = new THREE.DirectionalLight( 0xffffff );
+				// dirLight.position.set( - 3, 10, - 10 );
+				// dirLight.castShadow = true;
+				// // // dirLight.shadow.camera.top = 2;
+				// // // dirLight.shadow.camera.bottom = - 2;
+				// // // dirLight.shadow.camera.left = - 2;
+				// // // dirLight.shadow.camera.right = 2;
+				// // // dirLight.shadow.camera.near = 0.1;
+				// // // dirLight.shadow.camera.far = 40;
+				// scene.add( dirLight );
+
 
 				// scene.add( new THREE.CameraHelper( dirLight.shadow.camera ) );
 
-				// ground
+
+
+
+																			//GROUND
 
 				// const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 100, 100 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
 				// mesh.rotation.x = - Math.PI / 2;
 				// mesh.receiveShadow = true;
 				// scene.add( mesh );
 
+																			//Fog
+																			// scene.fog()
+				
+																		//HDR_Background
+				//HDR Loader
+				const hdrTextureURL = new URL('../assets/textures/nightscene.hdr', import.meta.url);
+				//RGBE Loader
+				const hdr = new RGBELoader();
+
+				let texture1
+				// let generator = new THREE.PMREMGenerator();
+
+				hdr.load(hdrTextureURL, function(texture) {
+					// let envmap = generator.fromEquirectangular(texture);
+					texture.mapping = THREE.EquirectangularReflectionMapping;
+					scene.background = texture;
+					// texture = scene.background;
+				});
+
+
+
+
+																		//Enviroment_Map
+				const updateAllMaterials = () => 
+				{
+						scene.traverse((child) => 
+						{
+							if(child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial)
+							{  
+								child.material.envMap = texture1					
+								child.material.envMapIntensity = 20
+								child.material.metalness = .9
+
+							
+								
+							}
+						})
+				}
 
 
 			
 																		//LOADING_SCREEN
-
-
 				var manager = new THREE.LoadingManager();
 				var progressElement = document.getElementById("progressElement");
 				
@@ -182,44 +249,19 @@
 				};
 
 
+																		//GLTF_Model
 
-																		//NatureScene
+			const loader = new GLTFLoader(manager);
+				loader.load( './assets/models/TulipNewest6_8(4).glb', function ( gltf ) {
+					console.log(gltf.scene)
+					model = gltf.scene;
+					scene.add( model );
 
-				// const textureLoader = new THREE.TextureLoader(manager);
-
-				// textureEquirec = textureLoader.load( './assets/textures/envmap.jpg' );
-				// textureEquirec.mapping = THREE.EquirectangularReflectionMapping;
-				// textureEquirec.encoding = THREE.sRGBEncoding;
-
-				// scene.background = black;
-
-
-
-																			//HDR
-
-				const nightscene = new URL('../assets/textures/nightscene.hdr', import.meta.url);
-				//RGBE Loader
-				const hdr = new RGBELoader();
-				hdr.load(nightscene, function(texture) {
-					texture.mapping = THREE.EquirectangularReflectionMapping;
-					scene.background = texture;
-					// scene.enviroment = texture;
-				});
+					updateAllMaterials();
 
 
 
-																		//GAMA_CORRECTION
-				//Reveal the dynamic range data - Key for DAY/NIGHT cycling
-				// renderer.outputEncoding = THREE.sRGBEncoding;
-
-
-
-
-																		//TONE_MAPPING
-														//Optomize any overexposed regions of our HDR
-
-
-
+																		//Texture_Loading
 
 				// let groundMap = texloader.load('./assets/models/textures/M_Ground_diffuse.png');
 				// let groundNormalMap = texloader.load('./assets/models/textures/M_Ground_normal.png');
@@ -254,13 +296,9 @@
 
 
 
-																			//Tulip_Model
+					
+																			//Tulip_Pedal Color
 
-				const loader = new GLTFLoader(manager);
-				loader.load( './assets/models/TulipNewest6_8(4).glb', function ( gltf ) {
-console.log(gltf.scene)
-					model = gltf.scene;
-					scene.add( model );
 
 					model.traverse( function ( object ) {
 
@@ -268,35 +306,20 @@ console.log(gltf.scene)
 						// if ( object.name.includes("Petal") && object.isMesh == true) {
 						// 	object.material.color.set(getRandomColor());
 						// }
-
-															// FlowerHead is the name of the parent of the petal meshes
 						if (object.name == 'FlowerHead') {
 							for (let child of object.children) { 
 							child.material.color.set(getRandomColor());
 							console.log(child)
 						} } 
-						// if ( object.name.includes("Plane") && object.isMesh == true ) {
-						// 	object.visible = false;
-						// }
+
 						// if ( object.name == "Tulip" ) {
 						// 	object.material = tulipMat;
 						// }
 
 					} );
 
-					//
-
-					// skeleton = new THREE.SkeletonHelper( model );
-					// skeleton.visible = false;
-					// scene.add( skeleton );
-
-					//
-
-					createPanel();
-
-
-
-
+									
+									
 
 																			//TULIP_ANIMATION
 
@@ -323,31 +346,57 @@ console.log(gltf.scene)
 
 
 
-
-																			//WINDOW_VIEW
+																			//RENDERER
 
 
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+
 				renderer.outputEncoding = THREE.sRGBEncoding;
 				renderer.shadowMap.enabled = true;
-				container.appendChild( renderer.domElement );
 
+				//TONEMAPPING
+				renderer.toneMapping = THREE.ACESFilmicToneMap; 
+				renderer.toneMappingExposure = 1.2;
+
+				//Physically_Correct
+				renderer.physicallyCorrectLights = true;
+
+				container.appendChild( renderer.domElement );
 				stats = new Stats();
 				container.appendChild( stats.dom );
-
 				window.addEventListener( 'resize', onWindowResize );
 
 			}
 
 
 
-																			//DEBUGER
+						// function UpdateTime {
+						// 	renderer.toneMappingExposure +- .05
+						// }					
+						
+						
+		 										//	Background_Panel
 
+			createPanel();
+												
 			function createPanel() {
-
 				const params = {
+
+					Night: function () {
+
+											const nightscene = new URL('../assets/textures/nightscene.hdr', import.meta.url);
+									//RGBE Loader
+									const hdr = new RGBELoader();
+
+											hdr.load(nightscene, function(texture) {
+												texture.mapping = THREE.EquirectangularReflectionMapping;
+
+						scene.background = texture;
+											});
+					},
+
 					Black: function () {
 
 						scene.background = black;
@@ -363,14 +412,13 @@ console.log(gltf.scene)
 						scene.background = gray;
 
 					},
-					Night: function () {
+				}
+			};
 
-						scene.background = texture;
-					},
-				};
+			// 																//GUI
+
 
 				const panel = new GUI( { width: 310 } );
-
 			// 	const folder1 = panel.addFolder( 'Visibility' );
 			// 	const folder2 = panel.addFolder( 'Activation/Deactivation' );
 			// 	const folder3 = panel.addFolder( 'Pausing/Stepping' );
@@ -379,32 +427,33 @@ console.log(gltf.scene)
 				const folder6 = panel.addFolder( 'General Speed' );
 				const folder7 = panel.addFolder( 'Background' );
 
+
 				settings = {
-			// 		'show model': true,
-			// 		'show skeleton': false,
-			// 		'deactivate all': deactivateAllActions,
-			// 		'activate all': activateAllActions,
-			// 		'pause/continue': pauseContinue,
-			// 		'make single step': toSingleStepMode,
-			// 		'modify step size': 0.05,
-			// 		'from walk to idle': function () {
+					// 'show model': true,
+					// 'show skeleton': false,
+					// 'deactivate all': deactivateAllActions,
+					// 'activate all': activateAllActions,
+					// 'pause/continue': pauseContinue,
+					// 'make single step': toSingleStepMode,
+					// 'modify step size': 0.05,
+					// 'from walk to idle': function () {
 
-			// 			prepareCrossFade( walkAction, idleAction, 1.0 );
+					// 	prepareCrossFade( walkAction, idleAction, 1.0 );
 
-			// 		},
-			// 		'from idle to walk': function () {
+					// },
+					// 'from idle to walk': function () {
 
-			// 			prepareCrossFade( idleAction, walkAction, 0.5 );
+					// 	prepareCrossFade( idleAction, walkAction, 0.5 );
 
-			// 		},
-			// 		'from walk to run': function () {
+					// },
+					// 'from walk to run': function () {
 
-			// 			prepareCrossFade( walkAction, runAction, 2.5 );
+					// 	prepareCrossFade( walkAction, runAction, 2.5 );
 
-			// 		},
-			// 		'from run to walk': function () {
+					// },
+					// 'from run to walk': function () {
 
-			// 			prepareCrossFade( runAction, walkAction, 5.0 );
+					// 	prepareCrossFade( runAction, walkAction, 5.0 );
 
 			// 		},
 					'use default duration': true,
@@ -429,34 +478,35 @@ console.log(gltf.scene)
 			// 	folder4.add( settings, 'use default duration' );
 			// 	folder4.add( settings, 'set custom duration', 0, 10, 0.01 );
 			// 	folder5.add( settings, 'modify idle weight', 0.0, 1.0, 0.01 ).listen().onChange( function ( weight ) {
-
+				folder7.add( params, 'Night' );
 				folder7.add( params, 'Black' );
 				folder7.add( params, 'White' );
 				folder7.add( params, 'Gray' );
-				folder7.add( params, 'Night' );
-			// 		setWeight( idleAction, weight );
+				
+				
+			// // 		setWeight( idleAction, weight );
 
-				// } );
-			// 	folder5.add( settings, 'modify walk weight', 0.0, 1.0, 0.01 ).listen().onChange( function ( weight ) {
+			// 	// } );
+			// // 	folder5.add( settings, 'modify walk weight', 0.0, 1.0, 0.01 ).listen().onChange( function ( weight ) {
 
-			// 		setWeight( walkAction, weight );
+			// // 		setWeight( walkAction, weight );
 
-			// 	} );
-			// 	folder5.add( settings, 'modify run weight', 0.0, 1.0, 0.01 ).listen().onChange( function ( weight ) {
+			// // 	} );
+			// // 	folder5.add( settings, 'modify run weight', 0.0, 1.0, 0.01 ).listen().onChange( function ( weight ) {
 
-			// 		setWeight( runAction, weight );
+			// // 		setWeight( runAction, weight );
 
-			// 	} );
-				folder6.add( settings, 'modify time scale', 0.0, 1.5, 0.01 ).onChange( modifyTimeScale );
+			// // 	} );
+			// 	folder6.add( settings, 'modify time scale', 0.0, 1.5, 0.01 ).onChange( modifyTimeScale );
 
-				// folder1.open();
-				// folder2.open();
-				// folder3.open();
-				// folder4.open();
-				// folder5.open();
-				folder6.open();
+			// 	// folder1.open();
+			// 	// folder2.open();
+			// 	// folder3.open();
+			// 	// folder4.open();
+			// 	// folder5.open();
+			// 	folder6.open();
 
-			}
+			// }
 
 
 			// function showModel( visibility ) {
@@ -490,19 +540,20 @@ console.log(gltf.scene)
 
 			// }
 
-			// function activateAllActions() {
+			function activateAllActions() {
 
-			// 	// setWeight( idleAction, settings[ 'modify idle weight' ] );
-			// 	// setWeight( walkAction, settings[ 'modify walk weight' ] );
-			// 	// setWeight( runAction, settings[ 'modify run weight' ] );
+				// setWeight( idleAction, settings[ 'modify idle weight' ] );
+				// setWeight( walkAction, settings[ 'modify walk weight' ] );
+				// setWeight( runAction, settings[ 'modify run weight' ] );
 
-			// 	actions.forEach( function ( action ) {
+				actions.forEach( function ( action ) {
 
-			// 		action.play();
+					action.play();
 
-			// 	} );
+				} );
 
-			// }
+			}
+																			//UNKNOWN
 
 			function pauseContinue() {
 
@@ -555,6 +606,10 @@ console.log(gltf.scene)
 				sizeOfNextStep = settings[ 'modify step size' ];
 
 			}
+
+
+																			//CrossFade
+
 
 			// function prepareCrossFade( startAction, endAction, defaultDuration ) {
 
@@ -683,16 +738,20 @@ console.log(gltf.scene)
 			// 	}
 
 			// }
-																			//RENDERER
+
+
+																			//WindowSize
 
 			function onWindowResize() {
 
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
-
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 			}
+
+
+																			//Animate_Function
 
 			function animate() {
 
@@ -728,6 +787,7 @@ console.log(gltf.scene)
 				// Update the animation mixer, the stats panel, and render this frame
 
 				mixer.update( mixerUpdateDelta );
+				// UpdateTime();
 
 				stats.update();
 
